@@ -632,7 +632,7 @@ int Its::Set_Default_Alias(int start, int end, int fps_type, char *&p) {
 	ptr=Alias->default_string[Fps.fps2index(fps_type)];
 	if(Alias->default_command_type[Fps.fps2index(fps_type)]<0) {
 		for(i=0; i<Alias->num_alias; i++) {
-			if(strcmpi(ptr, Alias->alias[i])==0) {
+			if(_stricmp(ptr, Alias->alias[i])==0) {
 				n = i;
 				str = Alias->string[Fps.fps2index(fps_type)][i];
 				break;
@@ -669,7 +669,7 @@ int Its::Define_Alias(char *&p) {
 	if(n<0 || m<0 || n>=MAX_ALIAS_LENGTH || m>=MAX_FILTERNAME_LENGTH)	return -20;
 	
 	for(i=0; i<Alias->num_alias; i++) {
-		if(strcmpi(p, Alias->alias[i])==0)	break;
+		if(_stricmp(p, Alias->alias[i])==0)	break;
 	}
 	if(i >= MAX_ALIAS)	return -20;
 	ptr[m] = NULL;

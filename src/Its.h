@@ -151,7 +151,8 @@ typedef struct {
 	int search2fps(char*&p, char*(*F)(int)) {
 		int index=-1;
 		Skip_Space(p);
-		for(int i=0; i<nums; i++) {
+		int i;
+		for(i=0; i<nums; i++) {
 			if(_memicmp(p, F(i), strlen(F(i)))==0) {
 				index = i;
 				p += strlen(F(i));

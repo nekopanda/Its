@@ -1,6 +1,10 @@
 #include "its.h"
 
-extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit2(IScriptEnvironment* env) {
+const AVS_Linkage *AVS_linkage = 0;
+
+extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit3(IScriptEnvironment* env, const AVS_Linkage* const vectors)
+{
+    AVS_linkage = vectors;
     env->AddFunction("Its", "c[def]s[tpr]s[fps]i[debug]b[posx]i[posy]i[chapter]s[output]s[opt]i", Its::Create, 0);
     env->AddFunction("ItsCut", "c[timecodes]s", ItsCut::Create, 0);
     return "`Its' IvTc/deint Switcher by kiraru2002";
@@ -17,7 +21,7 @@ Its::Its(AVSValue _args, IScriptEnvironment* env, void *user_data)
 		env->ThrowError("%s:(post) SetVar failed.", GetName());
 	}
 	
-	pGetFrame = GetFramePostFilter;
+	pGetFrame = &Its::GetFramePostFilter;
 	
 	for(int i=0; i<self->Filters->num_filters; i++) {
 		if(self->Filters->request[i] & (1<<5)) {
@@ -199,15 +203,15 @@ Its::Its(AVSValue _args, IScriptEnvironment* env)
 	}
 
 	if(Params.fps>0) {
-		pGetFrame = GetFrame30fps;
+		pGetFrame = &Its::GetFrame30fps;
 	} else {
 		if(Params.opt==0) {
-			pGetFrame = GetFrame120fps;
+			pGetFrame = &Its::GetFrame120fps;
 		} else {
-			pGetFrame = GetFrame120fps_itvfr;
+			pGetFrame = &Its::GetFrame120fps_itvfr;
 		}
 	}
-	pDispDebug = (Params.debug) ? DispDebug : DispDebugNULL;
+	pDispDebug = (Params.debug) ? &Its::DispDebug : &Its::DispDebugNULL;
 
 	dst_count  = 0;
 	chap_count = 0;

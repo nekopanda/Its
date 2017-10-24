@@ -26,7 +26,7 @@ public:
 		int	size = sizeof(char) * (frames+10);
 
 		_snprintf(MemFile,100,"vfrout_%d",_getpid());
-		m_hMemMap = CreateFileMapping((HANDLE)0xffffffff,NULL,PAGE_READWRITE,0,size,MemFile);
+		m_hMemMap = CreateFileMapping(INVALID_HANDLE_VALUE,NULL,PAGE_READWRITE,0,size,MemFile);
 		m_MemView = (char*) MapViewOfFile(m_hMemMap,FILE_MAP_ALL_ACCESS,0,0,0);
 		ZeroMemory(m_MemView,size);
 		m_frame_offset = 0;
@@ -158,7 +158,7 @@ public:
 		int	size = sizeof(VFR_INFO_HEADER)+sizeof(VFR_INFO_FRAME)*frames+ext;
 
 		_snprintf(Work,100,"exavi_vfrinfo_%d",_getpid());
-		m_hMemMap = CreateFileMapping((HANDLE)0xffffffff,NULL,PAGE_READWRITE,0,size,Work);
+		m_hMemMap = CreateFileMapping(INVALID_HANDLE_VALUE,NULL,PAGE_READWRITE,0,size,Work);
 		if(m_hMemMap==NULL) return;
 		m_vihp = (PVFR_INFO_HEADER)MapViewOfFile(m_hMemMap,FILE_MAP_ALL_ACCESS,0,0,0);
 		if(m_vihp==NULL) return;
