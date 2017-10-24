@@ -286,6 +286,16 @@ public:
 	~Its();
 	PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env) {return (this->*pGetFrame)(n, env);}
 	char *GetName() const	{return "Its"; }
+	int __stdcall SetCacheHints(int cachehints, int frame_range)
+	{
+		switch (cachehints)
+		{
+		case CACHE_GET_MTMODE:
+			return MT_SERIALIZED;
+		default:
+			return 0;
+		}
+	}
 
 private:
 	PVideoFrame __stdcall GetFrame30fps(int n, IScriptEnvironment* env);
