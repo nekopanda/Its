@@ -1,0 +1,37 @@
+#include <windows.h>
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 0,8,6,18
+ PRODUCTVERSION 0,8,6
+ FILEFLAGSMASK 0x3fL
+ FILEFLAGS 0x0L
+ FILEOS 0x40004L
+ FILETYPE 0x2L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "000004b0"
+        BEGIN
+            VALUE "Comments", "http://members.at.infoseek.co.jp/kiraru2002/\0"
+            VALUE "CompanyName", "kiraru2002\0"
+            VALUE "FileDescription", "Avisynth Plugin - Its\0"
+            VALUE "FileVersion", "0, 8, 6, 18\0"
+            VALUE "InternalName", "Its\0"
+            VALUE "LegalCopyright", "Copyright (C) 2004-2006 kiraru2002\0"
+            VALUE "OriginalFilename", "Its.dll\0"
+            VALUE "ProductName", "  Avisynth Plugin - Its\0"
+            VALUE "ProductVersion", "0, 8, 6\0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0, 1200
+    END
+END
+
