@@ -3,6 +3,7 @@
 
 #include <windows.h>
 #include <stdio.h>
+#include <memory>
 #include "avisynth.h"
 #include "common.h"
 #include "tpr.h"
@@ -247,7 +248,7 @@ private:
 	ALIAS			*Alias;
 	CHAPTERS		*Chapters;
 	PATH			*Path;
-	VfrInfoMap		*m_VfrInfoMap;
+	std::unique_ptr<VfrInfoMap> m_VfrInfoMap;
 	VfrMap			*m_VfrMap;
 	VfrOut			*m_VfrOut;
 	ULONGLONG		dst_count;

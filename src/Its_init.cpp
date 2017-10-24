@@ -44,7 +44,7 @@ Its::Its(AVSValue _args, IScriptEnvironment* env, void *user_data)
 
 Its::Its(AVSValue _args, IScriptEnvironment* env)
  : GenericVideoFilter(_args[0].AsClip()), self(NULL),
-   m_VfrInfoMap(NULL), m_VfrMap(NULL), m_VfrOut(NULL), Map(NULL), Out(NULL), Filters(NULL), Path(NULL), Alias(NULL)
+   m_VfrMap(NULL), m_VfrOut(NULL), Map(NULL), Out(NULL), Filters(NULL), Path(NULL), Alias(NULL)
    ,in_keyframes_flag(false), frame_pre(-1), frame_cur(-1)
 {
 	int i;
@@ -178,7 +178,7 @@ Its::Its(AVSValue _args, IScriptEnvironment* env)
 	vi.num_frames = rc;
 
 	if(Params.fps<=0) {
-		m_VfrInfoMap = new VfrInfoMap(vi.num_frames, 0);
+		m_VfrInfoMap = std::unique_ptr<VfrInfoMap>(new VfrInfoMap(vi.num_frames, 0));
 		m_VfrOut = new VfrOut;
 		if(m_VfrOut->Err()) {
 			delete m_VfrOut; m_VfrOut=NULL;
