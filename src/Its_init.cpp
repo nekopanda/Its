@@ -149,8 +149,9 @@ Its::Its(AVSValue _args, IScriptEnvironment* env)
 	for(int j=0; j<5; j++) {
 		for(i=0; i<Filters->num_filters; i++) {
 			if((Filters->request[i] & ((BYTE)1<<j))==0)  continue;
-			if(j==0)	sprintf(msg, "%s", Filters->name[i]);
-			else		sprintf(msg, "trim(%d,0).%s", j, Filters->name[i]);
+			int trimHead = (j < 3) ? j : 3;
+			if(trimHead ==0)	sprintf(msg, "%s", Filters->name[i]);
+			else		sprintf(msg, "%s.trim(%d,0)", Filters->name[i], trimHead);
 			AVSValue arg = msg;
 			try{
 				Filters->clip[i][j] = env->Invoke("Eval", AVSValue(&arg,1)).AsClip();
