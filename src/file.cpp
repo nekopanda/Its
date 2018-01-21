@@ -109,7 +109,7 @@ int Its::Parse_Line(char *&p) {
 			continue;
 		case ':':
 			continue;
-		case '[': // [24],[30],[60],[48],[20],[10],[12],[15]
+		case '[': // [24],[30],[60],[48],[20],[10],[12],[15],[25]
 			Skip_Space(p);
 			fps_type = Fps.search2fps(p, Fps.str);
 			if(fps_type>0) {
@@ -213,27 +213,28 @@ int Its::Set_Pattern2(int start, int end, int fps_type, char *&p) {
 
 int Its::Calc_AdjustMaxFrames(int start, int end, int fps_type) {
 	int max_frames = (end-start)*2;
-	if(mode_fps_adjust) {
-		switch(fps_type) {
-			case 10:
-				max_frames = (end-start)/3;
-				break;
-			case 12:
-				max_frames = (end-start)*2/5;
-				break;
-			case 15:
-				max_frames = (end-start)/2;
-				break;
-			case 24:
-				max_frames = (end-start)*4/5;
-				break;
-			case 30:
-				max_frames = end-start;
-				break;
-			case 48:
-				max_frames = (end-start)*4/5 * 2;
-				break;
-		}
+	switch(fps_type) {
+		case 10:
+			max_frames = (end-start)/3;
+			break;
+		case 12:
+			max_frames = (end-start)*2/5;
+			break;
+		case 15:
+			max_frames = (end-start)/2;
+			break;
+		case 24:
+			max_frames = (end-start)*4/5;
+			break;
+		case 25:
+			max_frames = (end - start) * 5 / 6;
+			break;
+		case 30:
+			max_frames = end-start;
+			break;
+		case 48:
+			max_frames = (end-start)*4/5 * 2;
+			break;
 	}
 	return max_frames;
 }
@@ -243,6 +244,7 @@ int Its::Set_SelectEvery(int start, int end, int fps_type, int cycle, char *patt
 	int frame = 0;
 	int i;
 	++end;
+	int frame_start = Calc_AdjustMaxFrames(0, start, fps_type);
 	int max_frame = Calc_AdjustMaxFrames(start, end, fps_type);
 	
 	start += start;
@@ -259,12 +261,12 @@ int Its::Set_SelectEvery(int start, int end, int fps_type, int cycle, char *patt
 	
 	for(i=start; i<end; i++) {
 		Map[i].start      = start;
+		Map[i].frame_start = frame_start;
 		Map[i].frame      = frame;
 		Map[i].fps        = fps_type;
 		Map[i].deint_type = 0;
 		Map[i].filter_id  = -1;
 		Map[i].alias_id   = 0;
-		Map[i].clip_offs  = 0;
 		Map[i].adjust     = (mode_fps_adjust) ? 1 : 0;
 		
 		if(pattern[cur_cycle]==0 || frame >= max_frame) {
@@ -398,18 +400,19 @@ void Its::Copy_TPRAttrib(int start, int end, TPR *Tpr) {
 	int i;
 	int frame = 0;
 	++end;
+	int frame_start = Calc_AdjustMaxFrames(0, start, Tpr->Info.fps);
 	int max_frame = Calc_AdjustMaxFrames(start, end, Tpr->Info.fps);
 	
 	start += start;
 	end += end;
 	for(i=start; i<end; i++) {
 		Map[i].start      = start;
+		Map[i].frame_start = frame_start;
 		Map[i].frame      = frame;
 		Map[i].fps        = Tpr->Info.fps;
 		Map[i].deint_type = Tpr->Map[i].deint_type;
 		Map[i].filter_id  = MAX_FILTERS+1;
 		Map[i].alias_id   = 0;
-		Map[i].clip_offs  = 0;
 		Map[i].adjust     = (mode_fps_adjust) ? 1 : 0;
 		if(Tpr->Map[i].attrib==0 || frame >= max_frame) {
 			Reset_Attrib(i, ATTRIB_SET|ATTRIB_COPY);
@@ -552,28 +555,14 @@ int Its::Set_Alias_Sub(int start, int end, int fps_type, char *ptr, int alias_id
 void Its::Set_MapInfo_Sub(int start, int end, int fps_type, int filter_id, int alias_id) {
 	int frame   = 0;
 	int count   = 0;
-	int offs    = 0;
 	BYTE a      = ATTRIB_SET;
-	BYTE b      = 0;
+	BYTE b      = (fps_type == 60) ? ATTRIB_SET : 0;
 	++end;
+	int frame_start = Calc_AdjustMaxFrames(0, start, fps_type);
 	int max_frame = Calc_AdjustMaxFrames(start, end, fps_type);
 	
 	if(filter_id>0 && filter_id<=MAX_FILTERS) {
 		Filters->request[filter_id-1] |= (fps_type==24||fps_type==48) ? ((BYTE)1<<(start%5)) : 1;
-	}
-	switch(fps_type) {
-		case 48:
-			b = ATTRIB_SET;
-			offs = start % 5;
-			break;
-		case 24:
-			offs = start % 5;
-			break;
-		case 60:
-			b = ATTRIB_SET;
-			break;
-		default:
-			break;
 	}
 
 	start += start;
@@ -585,8 +574,8 @@ void Its::Set_MapInfo_Sub(int start, int end, int fps_type, int filter_id, int a
 		Map[i].alias_id   = alias_id;
 		Map[i].fps        = fps_type;
 		Map[i].deint_type = 0;
+		Map[i].frame_start = frame_start;
 		Map[i].frame      = frame;
-		Map[i].clip_offs  = offs;
 		Map[i].adjust     = (mode_fps_adjust) ? 1 : 0;
 		
 		switch(fps_type) {
@@ -594,6 +583,14 @@ void Its::Set_MapInfo_Sub(int start, int end, int fps_type, int filter_id, int a
 			if((count>>1)%5==4 || count&1 || frame>=max_frame) {
 				Reset_Attrib(i, ATTRIB_SET|ATTRIB_COPY);
 			} else {
+				Set_Attrib(i, ATTRIB_SET);
+			}
+			break;
+		case 25:
+			if ((count >> 1) % 6 == 5 || count & 1 || frame >= max_frame) {
+				Reset_Attrib(i, ATTRIB_SET | ATTRIB_COPY);
+			}
+			else {
 				Set_Attrib(i, ATTRIB_SET);
 			}
 			break;

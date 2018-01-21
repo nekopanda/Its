@@ -14,10 +14,10 @@ private:
 	int  src_frame;
 	int  dst_frame;
 	int  end_frame;
-	ULONGLONG  *timecode;
+	double  *timecode;
 	const char *timecodesfilename;
 	BOOL enable_timecodes;
-	ULONGLONG total_count;
+	double total_count;
 	
 	
 public:
@@ -36,7 +36,7 @@ public:
 		}
 		timecodesfilename = _args[1].AsString("");
 		if(timecodesfilename[0]) enable_timecodes = TRUE;
-		if((timecode = new ULONGLONG [vi.num_frames-1])==NULL) {
+		if((timecode = new double [vi.num_frames-1])==NULL) {
 			env->ThrowError("%s: not enough memory.", GetName());
 		}
 		vfr->MakeWritable();
@@ -49,7 +49,7 @@ public:
 	}
 	
 	PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env) {
-		int count;
+		double count;
 		
 		if(dst_frame>=end_frame) {
 			vfr->SetCount(n, 0);
@@ -63,9 +63,8 @@ public:
 			child->GetFrame(dst_frame + 1, env);
 			if(vfr->GetCount(dst_frame + 1) == 0)		end_frame = dst_frame;
 			count = vfr->GetCount(dst_frame);
-			total_count += (ULONGLONG)count;
-			timecode[n] = (total_count * (1000/4/2) * vi.fps_denominator + vi.fps_numerator/2 )
-                                   / vi.fps_numerator;
+			total_count += count;
+			timecode[n] = (total_count * (1000/4/2) * vi.fps_denominator ) / vi.fps_numerator;
 //			vfr->SetCount(n, count);
 			if(dst_frame >= end_frame) {
 				if(enable_timecodes > 0) {
@@ -88,7 +87,7 @@ public:
 			return -1;
 		}
 		for(i=0; i<=end; i++) {
-			if(fprintf(hFile, "%I64d\n", timecode[i]) < 0) {
+			if(fprintf(hFile, "%I64d\n", (__int64)timecode[i]) < 0) {
 				return -1;
 			}
 		}

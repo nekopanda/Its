@@ -17,14 +17,9 @@ PVideoFrame __stdcall Its::GetFrame30fps(int n, IScriptEnvironment* env) {
 		result = dw_clip->GetFrame(Out[n].refer, env);
 		frame_no=Out[n].refer>>1;
 	} else {
-		int offs = Map[Out[n].refer].clip_offs;;
-		if(Map[Out[n].refer].fps==24) {
-			frame_no = ((Map[Out[n].refer].start>>1)+5-offs)/5*4-4+Map[Out[n].refer].frame;
-		}
-		else {
-			frame_no = (Out[n].refer>>1)-offs;
-		}
-		result = Filters->clip[Map[Out[n].refer].filter_id-1][offs]->GetFrame(frame_no, env);
+		auto& mapitem = Map[Out[n].refer];
+		frame_no = mapitem.frame_start + mapitem.frame;
+		result = Filters->clip[mapitem.filter_id-1][0]->GetFrame(frame_no, env);
 	}
 	(this->*pDispDebug)(n, env, result, frame_no);
 	return result;
@@ -42,20 +37,9 @@ PVideoFrame __stdcall Its::GetFrame120fps(int n, IScriptEnvironment* env) {
 		frame_no = Out[n].refer>>1;
 		result = dw_clip->GetFrame(Out[n].refer, env);
 	} else {
-		int offs = Map[Out[n].refer].clip_offs;
-		switch(Map[Out[n].refer].fps) {
-		case 24:
-		case 48:
-			frame_no = ((Map[Out[n].refer].start>>1)+5-offs)/5*4-4+Map[Out[n].refer].frame;
-			break;
-		case 60:
-			frame_no = Out[n].refer;
-			break;
-		default:
-			frame_no = (Out[n].refer>>1)-offs;
-			break;
-		}
-		result = Filters->clip[Map[Out[n].refer].filter_id-1][offs]->GetFrame(frame_no, env);
+		auto& mapitem = Map[Out[n].refer];
+		frame_no = mapitem.frame_start + mapitem.frame;
+		result = Filters->clip[mapitem.filter_id-1][0]->GetFrame(frame_no, env);
 	}
 
 	m_VfrInfoMap->Enter(1,INFINITE);
@@ -84,7 +68,6 @@ PVideoFrame __stdcall Its::GetFrame120fps(int n, IScriptEnvironment* env) {
 PVideoFrame __stdcall Its::GetFrame120fps_itvfr(int n, IScriptEnvironment* env) {
 	PVideoFrame		result;
 	int				frame_no;
-	int				offs = Map[Out[n].refer].clip_offs;
 	char			s;
 	int				rc;
 	
@@ -92,7 +75,7 @@ PVideoFrame __stdcall Its::GetFrame120fps_itvfr(int n, IScriptEnvironment* env) 
 		++frame_pre;
 		++frame_cur;
 		while(frame_cur < vi.num_frames && Filters->vfr[Map[Out[frame_cur].refer].filter_id-1]) {
-			Filters->clip[Map[Out[frame_cur].refer].filter_id-1][offs]->GetFrame(Out[frame_cur].refer>>1, env);
+			Filters->clip[Map[Out[frame_cur].refer].filter_id-1][0]->GetFrame(Out[frame_cur].refer>>1, env);
 			s = m_VfrOut->GetStatus(Out[frame_cur].refer>>1);
 			if(s != 'D') {
 				break;
@@ -119,27 +102,16 @@ PVideoFrame __stdcall Its::GetFrame120fps_itvfr(int n, IScriptEnvironment* env) 
 		m_VfrInfoMap->Enter(1,INFINITE);
 		if(n>0)  dst_count += m_VfrInfoMap->GetCount(n-1);
 		m_VfrInfoMap->Release(1);
-		Out[n].time = (dst_count * (1000/4/FPS::FPS_DIV_COEFF) * vi.fps_denominator + vi.fps_numerator/2 )
-                       / vi.fps_numerator;
+		Out[n].time = (dst_count * (1000/4/FPS::FPS_DIV_COEFF) * vi.fps_denominator ) / vi.fps_numerator;
 	}
 	
 	if(!IsFilter(Out[n].refer)) {
 		frame_no = Out[n].refer>>1;
 		result = dw_clip->GetFrame(Out[n].refer, env);
 	} else {
-		switch(Map[Out[n].refer].fps) {
-		case 24:
-		case 48:
-			frame_no = ((Map[Out[n].refer].start>>1)+5-offs)/5*4-4+Map[Out[n].refer].frame;
-			break;
-		case 60:
-			frame_no = Out[n].refer;
-			break;
-		default:
-			frame_no = (Out[n].refer>>1)-offs;
-			break;
-		}
-		result = Filters->clip[Map[Out[n].refer].filter_id-1][offs]->GetFrame(frame_no, env);
+		auto& mapitem = Map[Out[n].refer];
+		frame_no = mapitem.frame_start + mapitem.frame;
+		result = Filters->clip[Map[Out[n].refer].filter_id-1][0]->GetFrame(frame_no, env);
 	}
 
 	m_VfrInfoMap->Enter(1,INFINITE);
@@ -184,7 +156,8 @@ void Its::DispDebug(int n, IScriptEnvironment* env, PVideoFrame& result, int fra
 }
 
 void Its::DispDebugSub(PVideoFrame& pframe, int x, int y, int n, int frame_no, int type) {
-	int count, denom, fps;
+	double count;
+	int denom, fps;
 	int hh,mm,ss,tick;
 	int i;
 
@@ -219,7 +192,7 @@ void Its::DispDebugSub(PVideoFrame& pframe, int x, int y, int n, int frame_no, i
 				, Out[n].refer>>1
 				, Out[n].refer
 				, frame_no
-				, Map[Out[n].refer].clip_offs
+				, 0
 				, Map[Out[n].refer].fps
 				, (float)Out[n].delta/Fps.fps2coeff(Map[Out[n].refer].fps)
 				, (Out[n].attrib & ATTRIB_KEYFRAME) ? "[K]" : ""
@@ -235,7 +208,7 @@ void Its::DispDebugSub(PVideoFrame& pframe, int x, int y, int n, int frame_no, i
 			DrawString(pframe, msg, x, y+16);
 		} else if(Map[Out[n].refer].alias_id==-1) {
 			sprintf(msg, "<%s> [%s]"
-					, Alias->default_string[Fps.fps2index(Out[n].fps)]
+					, Alias->default_string[Fps.fps2index((int)Out[n].fps)]
 					, IsTPR(Out[n].refer) ? "TMPGEnc" : Filters->name[Map[Out[n].refer].filter_id-1]
 			);
 			DrawString(pframe, msg, x, y+16);
@@ -251,23 +224,23 @@ void Its::DispDebugSub(PVideoFrame& pframe, int x, int y, int n, int frame_no, i
 		denom = (int)m_VfrInfoMap->GetDenominator();
 		m_VfrInfoMap->Release(0);
 		m_VfrInfoMap->Enter(1,INFINITE);
-		count = (int)m_VfrInfoMap->GetCount(n);
+		count = m_VfrInfoMap->GetCount(n);
 		m_VfrInfoMap->Release(1);
 		fps =Fps.coeff2fps(count);
-		hh   = (int)(Out[n].time / 1000 / 3600);
-		mm   = (int)(Out[n].time / 1000 / 60 % 60);
-		ss   = (int)(Out[n].time / 1000 % 60);
-		tick = (int)(Out[n].time % 1000);
+		hh   = (int)(Out[n].time / 1000) / 3600;
+		mm   = (int)(Out[n].time / 1000) / 60 % 60;
+		ss   = (int)(Out[n].time / 1000) % 60;
+		tick = (int)Out[n].time % 1000;
 		sprintf(msg, "<vfrout> [%02d:%02d:%02d.%03d] %d/%d <%dfps> adjust=%d",
 					hh, mm, ss, tick,
-					count, m_VfrInfoMap->GetDenominator(), fps, Map[Out[n].refer].adjust);
+					(int)count, m_VfrInfoMap->GetDenominator(), fps, Map[Out[n].refer].adjust);
 		DrawString(pframe, msg, x, y+32);
 		break;
 	case 4:
-		hh   = (int)(Out[n].time / 1000 / 3600);
-		mm   = (int)(Out[n].time / 1000 / 60 % 60);
-		ss   = (int)(Out[n].time / 1000 % 60);
-		tick = (int)(Out[n].time % 1000);
+		hh   = (int)(Out[n].time / 1000) / 3600;
+		mm   = (int)(Out[n].time / 1000) / 60 % 60;
+		ss   = (int)(Out[n].time / 1000) % 60;
+		tick = (int)Out[n].time % 1000;
 		sprintf(msg, "<out> [%02d:%02d:%02d.%03d] %dfps", hh, mm, ss, tick, Params.fps);
 		DrawString(pframe, msg, x, y+32);
 		break;

@@ -120,7 +120,7 @@ public:
 #define VFRINFO_MUTEX_FRAME_NAME  "exavi_vfr_vfrinfo_frame___%d"
 
 typedef struct _VFR_FRAME_INFO {
-	BYTE    count;
+	double    count;
 	BYTE    flag;
 	BYTE    rsv[2];
 } VFR_INFO_FRAME,*PVFR_INFO_FRAME;
@@ -191,7 +191,7 @@ public:
 	void SetLength(LONG len) { m_vihp->length = len; }
 	void SetNumFrames(LONG n) { m_vihp->frames = n; }
 	void SetDenominator(BYTE n) { m_vihp->denominator = n; }
-	void SetCount(LONG n, BYTE cnt) {
+	void SetCount(LONG n, double cnt) {
 		m_vifp[n].count = cnt;
 	}
 	void SetFlag(LONG n, BYTE f) {
@@ -213,7 +213,7 @@ public:
 	BYTE GetDenominator() const {
 		 return  m_vihp->denominator;
 	}
-	BYTE GetCount(LONG n) const {
+	double GetCount(LONG n) const {
 		 return  m_vifp[n].count;
 	}
 	BYTE GetFlag(LONG n) const {
@@ -266,7 +266,7 @@ public:
 	bool SetLength(LONG len) {if(m_writable) {m_vihp->length = len; return true;} else return false; }
 	bool SetFrames(LONG n) { if(m_writable) {m_vihp->frames = n; return true;} else return false; }
 	bool SetDenominator(BYTE n) { if(m_writable) {m_vihp->denominator = n; return true;} else return false; }
-	bool SetCount(LONG n, BYTE cnt) {
+	bool SetCount(LONG n, double cnt) {
 		if(m_writable) {m_vifp[n].count = cnt; return true;} else return false;
 	}
 	bool SetFlag(LONG n, BYTE f) {
@@ -288,7 +288,7 @@ public:
 	BYTE GetDenominator() const {
 		 return  m_vihp->denominator;
 	}
-	BYTE GetCount(LONG n) const {
+	double GetCount(LONG n) const {
 		 return  m_vifp[n].count;
 	}
 	BYTE GetFlag(LONG n) const {

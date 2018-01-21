@@ -33,8 +33,8 @@ typedef struct {
 
 typedef struct {
 	int		priority;
-	enum { nums=8 };
-	enum { FPS24=0, FPS30=1, FPS60=2, FPS48=3, FPS20=4, FPS10=5, FPS12=6, FPS15=7 };
+	enum { nums=9 };
+	enum { FPS24=0, FPS30=1, FPS60=2, FPS48=3, FPS20=4, FPS10=5, FPS12=6, FPS15=7, FPS25=8 };
 	enum { FPS24_COEFF=10, FPS30_COEFF=8, FPS60_COEFF=4, FPS48_COEFF=5,
 		   FPS20_COEFF=12, FPS10_COEFF=24, FPS12_COEFF=20, FPS15_COEFF=16, FPS_DIV_COEFF=2 };
 	static char *str(int index) {
@@ -47,6 +47,7 @@ typedef struct {
 			case FPS10: return "10";
 			case FPS12: return "12";
 			case FPS15: return "15";
+			case FPS25: return "25";
 			default: return "30";
 		}
 	}
@@ -60,6 +61,7 @@ typedef struct {
 			case FPS10: return "[10]";
 			case FPS12: return "[12]";
 			case FPS15: return "[15]";
+			case FPS25: return "[25]";
 			default: return "[30]";
 		}
 	}
@@ -73,6 +75,7 @@ typedef struct {
 			case 10: return FPS10;
 			case 12: return FPS12;
 			case 15: return FPS15;
+			case 25: return FPS25;
 			default: return FPS30;
 		}
 	}
@@ -86,11 +89,12 @@ typedef struct {
 			case FPS10: return 10;
 			case FPS12: return 12;
 			case FPS15: return 15;
+			case FPS25: return 25;
 			default: return -1;
 		}
 	}
-	int  coeff2fps(int fps) {
-		switch(fps) {
+	int  coeff2fps(double fps) {
+		switch((int)fps) {
 			case FPS24_COEFF: return 24;
 			case FPS30_COEFF: return 30;
 			case FPS60_COEFF: return 60;
@@ -99,6 +103,7 @@ typedef struct {
 			case FPS10_COEFF: return 10;
 			case FPS12_COEFF: return 12;
 			case FPS15_COEFF: return 15;
+			case 9: return 25;
 			default: return -1;
 		}
 	}
@@ -112,12 +117,13 @@ typedef struct {
 			case 10:
 			case 12:
 			case 15:
+			case 25:
 			case 0:
 			case -1: return true;
 			default: return false;
 		}
 	}
-	int  fps2coeff(int fps) {
+	double  fps2coeff(int fps) {
 		switch(fps) {
 			case 24: return FPS24_COEFF;
 			case 30: return FPS30_COEFF;
@@ -127,6 +133,7 @@ typedef struct {
 			case 10: return FPS10_COEFF;
 			case 12: return FPS12_COEFF;
 			case 15: return FPS15_COEFF;
+			case 25: return 9.6; // =240/25
 			case -1: return FPS_DIV_COEFF;
 			case 0:  return 0;
 			default:
@@ -176,13 +183,13 @@ typedef struct {
 
 typedef struct {
 	int		start;
+	int frame_start;
 	int		frame;
 	BYTE	fps;
 	BYTE	attrib; // 0:none  1:set 2:copy 4:keyframe 8:chapter 0x80:delete
 	BYTE	deint_type;
 	BYTE	filter_id;
 	BYTE	alias_id;
-	BYTE	clip_offs;
 	BYTE	adjust;
 	BYTE	post;
 } MAP;
@@ -193,11 +200,11 @@ typedef struct {
 #define ATTRIB_DELETE   -128
 
 typedef struct {
-	ULONGLONG time;
+	double time;
 	int		refer;
-	int		delta;
+	double		delta;
 	BYTE	attrib;
-	BYTE	fps;	//=count  ,this is not equal Map.fps
+	double	fps;	//=count  ,this is not equal Map.fps
 } OUTPUT;
 
 typedef struct {
@@ -228,7 +235,7 @@ typedef struct {
 	char		language[16];
 	char		charset[16];
 	char		utf8_bom;
-	ULONGLONG	endtime;
+	double	endtime;
 	CHAPTER		c[MAX_CHAPTERS];
 } CHAPTERS;
 
@@ -251,7 +258,7 @@ private:
 	std::unique_ptr<VfrInfoMap> m_VfrInfoMap;
 	VfrMap			*m_VfrMap;
 	VfrOut			*m_VfrOut;
-	ULONGLONG		dst_count;
+	double		dst_count;
 	int				chap_count;
 	int				err_lineno;
 	int				err_frameno;
@@ -346,8 +353,8 @@ private:
 	bool		IsTPR(int i) {return (Map[i].filter_id==MAX_FILTERS+1) ? true : false;}
 	void		Copy_TPRAttrib(int start, int end, TPR *Tpr);
 	void		Set_StartAttrib(int start, int end);
-	int			calc_delta(int i, ULONGLONG dst_count);
-	int			AdjustFPSTiming(int i, int& n, ULONGLONG& dst_count);
+	double			calc_delta(int i, double dst_count);
+	int			AdjustFPSTiming(int i, int& n, double& dst_count);
 	int			CreateOutMap(void);
 	int			CreateStrippedOutMap(void);
 	int			PreScanMap(void);

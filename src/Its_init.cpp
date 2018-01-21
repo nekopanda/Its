@@ -188,7 +188,7 @@ Its::Its(AVSValue _args, IScriptEnvironment* env)
 		if(m_VfrInfoMap->Err()) env->ThrowError("%s: Not Allocated Shared Memory.", GetName());
 		m_VfrInfoMap->Enter(0,INFINITE);
 		m_VfrInfoMap->SetSubVersion(1);
-		m_VfrInfoMap->SetDenominator(Fps.fps2coeff(-1));
+		m_VfrInfoMap->SetDenominator((BYTE)Fps.fps2coeff(-1));
 		m_VfrInfoMap->Release(0);
 	}
 
@@ -270,13 +270,21 @@ int Its::CreateStrippedOutMap(void) {
 	int				n = 0;
 	int				copy=0;
 	bool			adjust_flag = false;
-	int				delta;
+	double				duration = 0;
 	dst_count  = 0;
 	chap_count = 0;
 	
 	for(int i=0; i<double_num_frames; i++) {
 		if(IsAttrib(i,ATTRIB_SET|ATTRIB_COPY)) {
 			// selected frame
+				duration = Fps.fps2coeff(Map[i].fps);
+				double frame_time = duration * (Map[i].frame_start + Map[i].frame);
+				if (frame_time < dst_count) {
+					// 前のフレームの表示時間より前なのでスキップ
+					Reset_Attrib(i, ATTRIB_SET | ATTRIB_COPY | ATTRIB_DELETE);
+					continue;
+				}
+				/*
 				if(adjust_flag || (Map[i].adjust & 2)) {
 					delta=calc_delta(i,dst_count);
 					if(delta<0) {
@@ -291,6 +299,7 @@ int Its::CreateStrippedOutMap(void) {
 					}
 					adjust_flag = false;
 				}
+				*/
 				if(IsAttrib(i,ATTRIB_SET)) {
 					Out[n].refer  = i;
 					copy = i;
@@ -300,9 +309,8 @@ int Its::CreateStrippedOutMap(void) {
 				Out[n].attrib = Map[i].attrib;
 				Out[n].fps    = Fps.fps2coeff(Map[i].fps);
 				Out[n].delta  = calc_delta(i, dst_count);
-				Out[n].time   = (dst_count * (1000/4/FPS::FPS_DIV_COEFF) * vi.fps_denominator + vi.fps_numerator/2 )
-                                 / vi.fps_numerator;
-				dst_count += Fps.fps2coeff(Map[i].fps);
+				Out[n].time   = (frame_time * (1000/4/FPS::FPS_DIV_COEFF) * vi.fps_denominator ) / vi.fps_numerator;
+				dst_count = frame_time;
 				if(IsAttrib(i, ATTRIB_CHAPTER)) {
 					Chapters->c[chap_count].frame = n;
 					++chap_count;
@@ -310,20 +318,20 @@ int Its::CreateStrippedOutMap(void) {
 				++n;
 		}
 	}
-	Chapters->endtime = (dst_count * (1000/4/FPS::FPS_DIV_COEFF) * vi.fps_denominator + vi.fps_numerator/2 )
-                                 / vi.fps_numerator;
+	dst_count += duration;
+	Chapters->endtime = (dst_count * (1000/4/FPS::FPS_DIV_COEFF) * vi.fps_denominator ) / vi.fps_numerator;
 	return n;
 }
 
-int Its::calc_delta(int i, ULONGLONG dst_count) {
-	return (int)(dst_count - (ULONGLONG)i * Fps.fps2coeff(60));
+double Its::calc_delta(int i, double dst_count) {
+	return dst_count - i * Fps.fps2coeff(60);
 }
 
-int Its::AdjustFPSTiming(int i, int& n, ULONGLONG& dst_count) {
-	int delta = calc_delta(i, dst_count);
+int Its::AdjustFPSTiming(int i, int& n, double& dst_count) {
+	double delta = calc_delta(i, dst_count);
 	
 	if(n<=0) return 0;
-	int count = (int)Out[n-1].fps - delta;
+	double count = Out[n-1].fps - delta;
 	if( count > 255) return ITS_ERR_ADJUST;
 	Out[n-1].fps = (BYTE)count;
 	return 0;
@@ -350,10 +358,10 @@ int Its::WriteChapterFile(const char *savefile) {
 	if(hFile) {
 		for(i=0; i<end; i++) {
 			if(!(Out[i].attrib & (ATTRIB_SET|ATTRIB_COPY)) || !(Out[i].attrib & ATTRIB_CHAPTER)) continue;
-			hh = (int)(Out[i].time / 1000 / 3600);
-			mm = (int)(Out[i].time / 1000 / 60 % 60);
-			ss = (int)(Out[i].time / 1000 % 60);
-			tick = (int)(Out[i].time % 1000);
+			hh = (int)(Out[i].time / 1000) / 3600;
+			mm = (int)(Out[i].time / 1000) / 60 % 60;
+			ss = (int)(Out[i].time / 1000) % 60;
+			tick = (int)Out[i].time % 1000;
 			if(Chapters->language[0]==0) {
 				if((rc = WriteChapterOGGFile(hFile, hh, mm, ss, tick, i, chapter)) < 0) return rc;
 			} else {
@@ -380,7 +388,7 @@ int Its::WriteChapterOGGFile(FILE *hFile, int hh, int mm, int ss, int tick, int 
 	return 0;
 }
 int Its::WriteChapterXMLFile(FILE *hFile, int hh, int mm, int ss, int tick, int frame, int index) {
-	ULONGLONG endtime;
+	double endtime;
 	int hh2, mm2, ss2, tick2;
 
 	if(index==0) {
@@ -400,10 +408,10 @@ int Its::WriteChapterXMLFile(FILE *hFile, int hh, int mm, int ss, int tick, int 
 	} else {
 		endtime = Out[Chapters->c[index+1].frame].time-1;
 	}
-	hh2 = (int)(endtime / 1000 / 3600);
-	mm2 = (int)(endtime / 1000 / 60 % 60);
-	ss2 = (int)(endtime / 1000 % 60);
-	tick2 = (int)(endtime % 1000);
+	hh2 = (int)(endtime / 1000) / 3600;
+	mm2 = (int)(endtime / 1000) / 60 % 60;
+	ss2 = (int)(endtime / 1000) % 60;
+	tick2 = (int)endtime % 1000;
 
 	if(fprintf(hFile, "    <ChapterAtom>\n"
 	                  "      <ChapterDisplay>\n"
@@ -459,7 +467,7 @@ int Its::WriteTimecodesFile(const char *timecodesfile, const char *chapterfile) 
 	}
 	for(i=0; i<end; i++) {
 		if(!(Out[i].attrib & (ATTRIB_SET|ATTRIB_COPY))) continue;
-		if(fprintf(hFile, "%I64d\n", Out[i].time) < 0) {
+		if(fprintf(hFile, "%I64d\n", (__int64)Out[i].time) < 0) {
 			return ITS_ERR_TIMECODES_WRITE;
 		}
 	}
