@@ -19,7 +19,7 @@ PVideoFrame __stdcall Its::GetFrame30fps(int n, IScriptEnvironment* env) {
 	} else {
 		auto& mapitem = Map[Out[n].refer];
 		frame_no = mapitem.frame_start + mapitem.frame;
-		result = Filters->clip[mapitem.filter_id-1][0]->GetFrame(frame_no, env);
+		result = Filters->clip[mapitem.filter_id-1]->GetFrame(frame_no, env);
 	}
 	(this->*pDispDebug)(n, env, result, frame_no);
 	return result;
@@ -39,7 +39,7 @@ PVideoFrame __stdcall Its::GetFrame120fps(int n, IScriptEnvironment* env) {
 	} else {
 		auto& mapitem = Map[Out[n].refer];
 		frame_no = mapitem.frame_start + mapitem.frame;
-		result = Filters->clip[mapitem.filter_id-1][0]->GetFrame(frame_no, env);
+		result = Filters->clip[mapitem.filter_id-1]->GetFrame(frame_no, env);
 	}
 
 	m_VfrInfoMap->Enter(1,INFINITE);
@@ -75,7 +75,7 @@ PVideoFrame __stdcall Its::GetFrame120fps_itvfr(int n, IScriptEnvironment* env) 
 		++frame_pre;
 		++frame_cur;
 		while(frame_cur < vi.num_frames && Filters->vfr[Map[Out[frame_cur].refer].filter_id-1]) {
-			Filters->clip[Map[Out[frame_cur].refer].filter_id-1][0]->GetFrame(Out[frame_cur].refer>>1, env);
+			Filters->clip[Map[Out[frame_cur].refer].filter_id-1]->GetFrame(Out[frame_cur].refer>>1, env);
 			s = m_VfrOut->GetStatus(Out[frame_cur].refer>>1);
 			if(s != 'D') {
 				break;
@@ -111,7 +111,7 @@ PVideoFrame __stdcall Its::GetFrame120fps_itvfr(int n, IScriptEnvironment* env) 
 	} else {
 		auto& mapitem = Map[Out[n].refer];
 		frame_no = mapitem.frame_start + mapitem.frame;
-		result = Filters->clip[Map[Out[n].refer].filter_id-1][0]->GetFrame(frame_no, env);
+		result = Filters->clip[Map[Out[n].refer].filter_id-1]->GetFrame(frame_no, env);
 	}
 
 	m_VfrInfoMap->Enter(1,INFINITE);

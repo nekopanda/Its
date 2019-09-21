@@ -562,7 +562,7 @@ void Its::Set_MapInfo_Sub(int start, int end, int fps_type, int filter_id, int a
 	int max_frame = Calc_AdjustMaxFrames(start, end, fps_type);
 	
 	if(filter_id>0 && filter_id<=MAX_FILTERS) {
-		Filters->request[filter_id-1] |= (fps_type==24||fps_type==48) ? ((BYTE)1<<(start%5)) : 1;
+		Filters->request[filter_id - 1] |= 1;
 	}
 
 	start += start;

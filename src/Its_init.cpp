@@ -146,25 +146,21 @@ Its::Its(AVSValue _args, IScriptEnvironment* env)
 		env->ThrowError("%s: Invoke failed. (%s)", GetName(), ae.msg);
 	}
 
-	for(int j=0; j<5; j++) {
-		for(i=0; i<Filters->num_filters; i++) {
-			if((Filters->request[i] & ((BYTE)1<<j))==0)  continue;
-			int trimHead = (j < 3) ? j : 3;
-			if(trimHead ==0)	sprintf(msg, "%s", Filters->name[i]);
-			else		sprintf(msg, "%s.trim(%d,0)", Filters->name[i], trimHead);
-			AVSValue arg = msg;
-			try{
-				Filters->clip[i][j] = env->Invoke("Eval", AVSValue(&arg,1)).AsClip();
-			}
-			catch(IScriptEnvironment::NotFound) {
-				env->ThrowError("%s: NotFound. <%s>", GetName(), msg);
-			}
-			catch(AvisynthError ae) {
-				env->ThrowError("%s: Invoke failed. <%s>\n(%s)", GetName(), msg, ae.msg);
-			}
-			VfrOut vfr;
-			if(!vfr.Err())  { Filters->vfr[i] = true; }
+	for(i=0; i<Filters->num_filters; i++) {
+		if((Filters->request[i] & 1)==0)  continue;
+		const char* name = Filters->name[i];
+		AVSValue arg = name;
+		try{
+			Filters->clip[i] = env->Invoke("Eval", AVSValue(&arg,1)).AsClip();
 		}
+		catch(IScriptEnvironment::NotFound) {
+			env->ThrowError("%s: NotFound. <%s>", GetName(), name);
+		}
+		catch(AvisynthError ae) {
+			env->ThrowError("%s: Invoke failed. <%s>\n(%s)", GetName(), name, ae.msg);
+		}
+		VfrOut vfr;
+		if(!vfr.Err())  { Filters->vfr[i] = true; }
 	}
 	POST_require_flag = false;
 	for(i=0; i<Filters->num_filters; i++) {

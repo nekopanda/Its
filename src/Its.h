@@ -209,7 +209,7 @@ typedef struct {
 
 typedef struct {
 	int		num_filters;
-	PClip	clip[MAX_FILTERS][5];
+	PClip	clip[MAX_FILTERS];
 	PClip	post[MAX_FILTERS];
 	int		start[MAX_FILTERS];
 	char	name[MAX_FILTERS][MAX_FILTERNAME_LENGTH];
